@@ -3,6 +3,7 @@ package org.fixme;
 import java.io.*;
 import java.net.*;
 
+
 /**
  * This thread is responsible to handle client connection.
  *
@@ -14,6 +15,7 @@ public class ServerThread extends Thread {
 
     public ServerThread(Socket socket) {
         this.socket = socket;
+        Router.connections.add(socket);
     }
 
     public void run() {
@@ -22,19 +24,15 @@ public class ServerThread extends Thread {
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-            // Send text to client
-            OutputStream output = socket.getOutputStream();
-            PrintWriter writer = new PrintWriter(output, true);
-
             String text;
 
-            System.out.println("Sending id to client: " + id);
-            writer.println(id);
             do {
                 // recieve messages with incomming id and dest id. This then tells me where to send messages to. But how to send messages to specific port and id????
                 text = reader.readLine();
-                System.out.println("Ack: " + text);
+                System.out.println(text);
                 id++;
+                text = reader.readLine();
+                System.out.println("Ack: " + text);
             } while(!text.equals("-1"));
             socket.close();
         } catch (IOException ex) {

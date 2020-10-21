@@ -20,21 +20,18 @@ public class Broker {
     public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 5000)) {
 
-            OutputStream output = socket.getOutputStream();
-            PrintWriter writer = new PrintWriter(output, true);
+            // OutputStream output = socket.getOutputStream();
+            // PrintWriter writer = new PrintWriter(output, true);
 
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String text;
             do {
+                MessageHandler.sendMessage(socket);
                 text = reader.readLine();
-
-                System.out.println("Recieved message from server: " + text);
-
-                writer.println("Replying to server " + socket.getLocalPort());
+                System.out.println(text);
 
             } while (!text.equals("-1"));
-
 
             socket.close();
 

@@ -27,7 +27,6 @@ public class ServerSocketThread extends Thread {
                 }
                 // need to add this socket to a list
                 new ServerThread(socket).start();
-                System.out.println(socket.getPort());
             }
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
