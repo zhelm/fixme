@@ -9,10 +9,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-/**
- * Hello world!
- *
- */
 public class Market 
 {
     public static void main( String[] args ) {
@@ -25,11 +21,10 @@ public class Market
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String text;
             do {
+                // R
+                // S
                 text = reader.readLine();
-
-                System.out.println("Client has recieved ID of: " + text);
-
-                writer.println("Sending ID to server: " + text);
+                MessageHandler.sendMessage(socket, text);
 
             } while (!text.equals("-1"));
 

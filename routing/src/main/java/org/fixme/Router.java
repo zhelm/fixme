@@ -10,7 +10,7 @@ import java.util.ArrayList;
  *
  */
 public class Router {
-    public static ArrayList<Socket> connections = new ArrayList<Socket>();
+    public static ArrayList<ClientModel> connections = new ArrayList<ClientModel>();
     public static void main(String[] args) throws IOException {
         new ServerSocketThread(5000).start();
         new ServerSocketThread(5001).start();
