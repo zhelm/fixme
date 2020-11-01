@@ -20,6 +20,19 @@ public abstract class MessageHandler {
         // create message 
         writer.println("Executed");
         // Not that simple. Need to use fix protocol
+
+        // Check market db if that specific instrument is there 
+        // and if there is enough of it
+        // at that specific price limit
+
+        if(MarketDB.isInstrument("Gold", 1) && MarketDB.checkInstrumentQuantity("Gold", 5, 1) && MarketDB.checkPriceLimit("Gold", 20, 1)) {
+            MarketDB.executeTransaction("Gold", 5, 1, true);
+        } else {
+            writer.println("FAILURE");
+        }
+
+        // if all of that is fine then complete transaction buy(remove and add to a transaction table) or sell(add and remove from transaction table)
+        // 
         // "id="+attach.clientId+soh+fixv+soh+"35=8"+soh+"39=8"+soh+"50="+attach.clientId+soh+"49="+attach.clientId+soh+"56="+dstId+soh;
 // 35       D      means new order single
 // 35       8      means execution report
