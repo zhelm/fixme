@@ -26,7 +26,9 @@ public abstract class MessageHandler {
         // at that specific price limit
 
         if(MarketDB.isInstrument("Gold", 1) && MarketDB.checkInstrumentQuantity("Gold", 5, 1) && MarketDB.checkPriceLimit("Gold", 20, 1)) {
-            MarketDB.executeTransaction("Gold", 5, 1, true);
+            // Todo get the id and price
+            MarketDB.executeTransaction("Gold", 5, 1, true, 2, 100);
+            writer.println("Write the fix message here");
         } else {
             writer.println("FAILURE");
         }
