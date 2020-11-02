@@ -151,7 +151,7 @@ public abstract class MarketDB {
         } else {
             createBrokerInstrumentTransaction(getInstrumentID(instrument), brokerID, quantity, marketID, isBuy, price);
         }
-        updateMarket(instrument, quantity, isBuy);
+        updateMarket(getInstrumentID(instrument), quantity, isBuy, marketID);
         // Update market table
     }
 
@@ -165,9 +165,10 @@ public abstract class MarketDB {
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
                 quantity = (isBuy) ? getNewQuantity(instrumentID, brokerID, marketID) + quantity
-                    : getNewQuantity(instrumentID, brokerID, marketID) - quantity;
+                        : getNewQuantity(instrumentID, brokerID, marketID) - quantity;
 
-                String newHero = "INSERT INTO Marketbroker"+ marketID +"(BrokerID, InstrumentID, Quantity, BuyPrice) VALUES(?,?,?,?)";
+                String newHero = "INSERT INTO Marketbroker" + marketID
+                        + "(BrokerID, InstrumentID, Quantity, BuyPrice) VALUES(?,?,?,?)";
                 PreparedStatement pstmtVillains = conn.prepareStatement(newHero);
 
                 pstmtVillains.setInt(1, brokerID);
@@ -232,7 +233,7 @@ public abstract class MarketDB {
                 int ret = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
-                ResultSet rs = stmt.executeQuery("Select * from Market_" + marketID + " where InstrumentID = "
+                ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where InstrumentID = "
                         + instrumentID + " AND BrokerID = " + marketID);
                 while (rs.next()) {
                     count++;
@@ -264,12 +265,79 @@ public abstract class MarketDB {
         return -1;
     }
 
-    public static void updateMarket() {
+    public static void updateMarket(int instrumentID, int quantity, Boolean isBuy, int marketID) {
+        Connection connection = null;
+        try {
+
+            quantity = (isBuy) ? getNewMarketQuantity(instrumentID, marketID) - quantity
+                    : getNewMarketQuantity(instrumentID, marketID) + quantity;
+
+            String sql = "UPDATE Market_" + marketID + " SET Quantity = ? WHERE id = ?";
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Swingy.db");
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setInt(1, quantity);
+                pstmt.setInt(2, instrumentID);
+
+                pstmt.executeUpdate();
+                System.out.println("Market updated");
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        } finally {
+            try {
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
+            }
+        }
 
     }
-
+    // TODO
     public static boolean checkBrokerTransaction(int brokerID, int instrumentID) {
         return true;
+    }
+
+    public static int getNewMarketQuantity(int instrumentID, int marketID) {
+        Connection connection = null;
+        try {
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
+                    Statement stmt = conn.createStatement()) {
+                int count = 0;
+                int ret = 0;
+                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+
+                ResultSet rs = stmt.executeQuery("Select * from Market_" + marketID + " where id = " + instrumentID);
+                while (rs.next()) {
+                    count++;
+                    try {
+                        ret = rs.getInt("Quantity");
+                    } catch (Exception e) {
+                        System.out.println("No such column found");
+                    }
+                }
+                if (count == 1) {
+                    return ret;
+                } else {
+                    System.out.println("Something went wrong");
+                    System.exit(-1);
+                }
+
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        } finally {
+            try {
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+        System.out.println("If this ever happens I will be very surpised...");
+        return -1;
     }
 
     // TODO
