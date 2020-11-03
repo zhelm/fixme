@@ -38,7 +38,7 @@ public abstract class MessageHandler {
                             Integer.parseInt(fixMessage[10].split("=")[1]))) {
                 // TODO get everything from fix message
                 MarketDB.executeTransaction(fixMessage[7].split("=")[1], Integer.parseInt(fixMessage[5].split("=")[1]),
-                        Integer.parseInt(fixMessage[0].split("=")[1]), true,
+                        Integer.parseInt(fixMessage[0].split("=")[1]), (Integer.parseInt(fixMessage[4].split("=")[1]) == 1)? true : false,
                         Integer.parseInt(fixMessage[10].split("=")[1]), MarketDB.getInstrumentPrice(
                                 fixMessage[7].split("=")[1], Integer.parseInt(fixMessage[10].split("=")[1])));
                 System.out.println("Well is did it");

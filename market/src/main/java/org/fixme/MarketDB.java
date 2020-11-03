@@ -3,13 +3,13 @@ package org.fixme;
 import java.sql.*;
 
 public abstract class MarketDB {
-    
+
     public static void executeTransaction(String instrument, int quantity, int brokerID, boolean isBuy, int marketID,
             int price) {
-    
+
         // Update market table
         //
-    
+
         // Update broker table
         // Insert or update broker in table
         if (checkBrokerTransaction(brokerID, getInstrumentID(instrument, marketID), marketID)) {
@@ -17,26 +17,27 @@ public abstract class MarketDB {
         } else {
             createBrokerInstrumentTransaction(getInstrumentID(instrument, marketID), brokerID, quantity, marketID, isBuy, price);
         }
-        updateMarket(getInstrumentID(instrument, marketID), quantity, isBuy, marketID);
-        // Update market table
+
+        updateMarket(getInstrumentID(instrument, marketID), quantity, isBuy, marketID, brokerID);
+        // Update market table first
     }
 
     public static boolean isInstrument(String Instrument, int marketID) {
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
-            Statement stmt = conn.createStatement()) {
+                    Statement stmt = conn.createStatement()) {
                 int count = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
-                
-                ResultSet rs = stmt
-                .executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
+
+                ResultSet rs = stmt.executeQuery(
+                        "Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
                         rs.getString("Instrument");
                     } catch (Exception e) {
-                        System.out.println("No such column found");
+                        System.out.println("No such column found 1");
                     }
                 }
                 if (count == 1) {
@@ -70,16 +71,17 @@ public abstract class MarketDB {
                     Statement stmt = conn.createStatement()) {
                 int Available_Quantity = 0;
                 int count = 0;
+                //TODO Need to know if its buy or sell
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
-                ResultSet rs = stmt
-                        .executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
+                ResultSet rs = stmt.executeQuery(
+                        "Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
                         Available_Quantity = rs.getInt("Available_Quantity");
                     } catch (Exception e) {
-                        System.out.println("No such column found");
+                        System.out.println("No such column found 2");
                     }
                 }
                 if (count == 1 && quantity <= Available_Quantity) {
@@ -114,20 +116,24 @@ public abstract class MarketDB {
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     Statement stmt = conn.createStatement()) {
+
+                //TODO Need to know if its buy or sell
+
                 int price = 0;
                 int count = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
-                ResultSet rs = stmt
-                        .executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
+                ResultSet rs = stmt.executeQuery(
+                        "Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
                         price = rs.getInt("Price");
                     } catch (Exception e) {
-                        System.out.println("No such column found");
+                        System.out.println("No such column found 3");
                     }
                 }
+                // TODO I think this is wrong
                 if (count == 1 && limit <= price) {
                     return true;
                 } else if (count == 1 && limit >= price) {
@@ -154,7 +160,6 @@ public abstract class MarketDB {
         System.out.println("If this ever happens I will be very surpised...");
         return false;
     }
-
 
     public static void createBrokerInstrumentTransaction(int instrumentID, int brokerID, int quantity, int marketID,
             boolean isBuy, int price) {
@@ -231,14 +236,14 @@ public abstract class MarketDB {
                 int ret = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
-                ResultSet rs = stmt.executeQuery("Select * from Market_" + marketID + " where Instrument like '"
-                        + instrument + "'");
+                ResultSet rs = stmt.executeQuery(
+                        "Select * from Market_" + marketID + " where Instrument like '" + instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
                         ret = rs.getInt("Price");
                     } catch (Exception e) {
-                        System.out.println("No such column found");
+                        System.out.println("No such column found 4");
                     }
                 }
                 if (count == 1) {
@@ -279,7 +284,7 @@ public abstract class MarketDB {
                     try {
                         ret = rs.getInt("Quantity");
                     } catch (Exception e) {
-                        System.out.println("No such column found");
+                        System.out.println("No such column found 5");
                     }
                 }
                 if (count == 1) {
@@ -304,14 +309,18 @@ public abstract class MarketDB {
         return -1;
     }
 
-    public static void updateMarket(int instrumentID, int quantity, Boolean isBuy, int marketID) {
+    public static boolean updateMarket(int instrumentID, int quantity, Boolean isBuy, int marketID, int brokerID) {
         Connection connection = null;
         try {
-
+            // if its a sell I need to check if broker has enough to sell
             quantity = (isBuy) ? getNewMarketQuantity(instrumentID, marketID) - quantity
                     : getNewMarketQuantity(instrumentID, marketID) + quantity;
 
-            String sql = "UPDATE Market_" + marketID + " SET Quantity = ? WHERE id = ?";
+            if (quantity < 0) {
+                return false;
+            }
+
+            String sql = "UPDATE Market_" + marketID + " SET Available_Quantity = ? WHERE id = ?";
 
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -321,6 +330,7 @@ public abstract class MarketDB {
 
                 pstmt.executeUpdate();
                 System.out.println("Market updated");
+                return true;
             } catch (SQLException e) {
                 System.out.println(e.getMessage());
             }
@@ -332,7 +342,7 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-
+        return false;
     }
 
     public static boolean checkBrokerTransaction(int brokerID, int instrumentID, int marketID) {
@@ -343,14 +353,15 @@ public abstract class MarketDB {
                 int count = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
-                ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where BrokerID = " + brokerID + " AND InstrumentID = " + instrumentID);
+                ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where BrokerID = "
+                        + brokerID + " AND InstrumentID = " + instrumentID);
                 while (rs.next()) {
                     count++;
                 }
                 if (count == 1) {
                     return true;
-                } else if (count == 0){
-                    return false; 
+                } else if (count == 0) {
+                    return false;
                 } else {
                     System.out.println("Something went wrong 3");
                     System.exit(-1);
@@ -384,9 +395,9 @@ public abstract class MarketDB {
                 while (rs.next()) {
                     count++;
                     try {
-                        ret = rs.getInt("Quantity");
+                        ret = rs.getInt("Available_Quantity");
                     } catch (Exception e) {
-                        System.out.println("No such column found");
+                        System.out.println("No such column found 6");
                     }
                 }
                 if (count == 1) {
@@ -420,13 +431,14 @@ public abstract class MarketDB {
                 int ret = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
-                ResultSet rs = stmt.executeQuery("Select * from Market_" + marketID + " where Instrument like '" + instrument + "'");
+                ResultSet rs = stmt.executeQuery(
+                        "Select * from Market_" + marketID + " where Instrument like '" + instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
                         ret = rs.getInt("id");
                     } catch (Exception e) {
-                        System.out.println("No such column found");
+                        System.out.println("No such column found 7");
                     }
                 }
                 if (count == 1) {
@@ -451,4 +463,3 @@ public abstract class MarketDB {
         return -1;
     }
 }
- 
