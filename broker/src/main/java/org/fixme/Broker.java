@@ -22,10 +22,10 @@ public class Broker {
             // buy/sell = 54
             // brokerid - 50 and 49
 
-            String Instrument = "SOL"; // 55
+            String Instrument = "GOLD"; // 55
             String Quantity = "20"; // 38
-            String Market = "2"; // 56
-            String Price = "50"; // 44
+            String Market = "1"; // 56
+            String Price = "20"; // 44
             boolean isBuy = true;
 
             // "id="+attach.clientId+soh+fixv+soh+"35=D"+soh+"54=1"+soh+"38=2"+soh+"44=90"+soh+"55=WTCSHIRTS"+soh;
@@ -78,7 +78,7 @@ public class Broker {
 
     public static String getFixMessage(int id, String Instrument, String Quantity, String Market, String Price,
             int wallet, Boolean isBuy) {
-        String message = "id=" + id + (char) 1 + "8=FIX.4.2" + (char) 1 + "35=D" + (char) 1 + "53=1" + (char) 1 + "54="
+        String message = "id=" + id + (char) 1 + "8=FIX.4.2" + (char) 1 + "35=D" + (char) 1 + (char) 1 + "54="
                 + ((isBuy) ? 1 : 2) + (char) 1 + "38=" + Quantity + (char) 1 + "44=" + Price + (char) 1 + "55="
                 + Instrument + (char) 1 + "50=" + id + (char) 1 + "49=" + id + (char) 1 + "56=" + Market + (char) 1;
         int checksum = getCheckSum(message);

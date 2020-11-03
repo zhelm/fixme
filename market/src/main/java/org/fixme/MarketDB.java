@@ -3,17 +3,34 @@ package org.fixme;
 import java.sql.*;
 
 public abstract class MarketDB {
+    
+    public static void executeTransaction(String instrument, int quantity, int brokerID, boolean isBuy, int marketID,
+            int price) {
+    
+        // Update market table
+        //
+    
+        // Update broker table
+        // Insert or update broker in table
+        if (checkBrokerTransaction(brokerID, getInstrumentID(instrument, marketID), marketID)) {
+            updateBrokerInstrumentTransaction(getInstrumentID(instrument, marketID), brokerID, quantity, marketID, isBuy, price);
+        } else {
+            createBrokerInstrumentTransaction(getInstrumentID(instrument, marketID), brokerID, quantity, marketID, isBuy, price);
+        }
+        updateMarket(getInstrumentID(instrument, marketID), quantity, isBuy, marketID);
+        // Update market table
+    }
 
-    public static boolean isInstrument(String Instrument, int id) {
+    public static boolean isInstrument(String Instrument, int marketID) {
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
-                    Statement stmt = conn.createStatement()) {
+            Statement stmt = conn.createStatement()) {
                 int count = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
-
+                
                 ResultSet rs = stmt
-                        .executeQuery("Select * from Market_" + id + " where  Instrument like '" + Instrument + "'");
+                .executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
@@ -46,7 +63,7 @@ public abstract class MarketDB {
         return false;
     }
 
-    public static boolean checkInstrumentQuantity(String Instrument, int quantity, int id) {
+    public static boolean checkInstrumentQuantity(String Instrument, int quantity, int marketID) {
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
@@ -56,7 +73,7 @@ public abstract class MarketDB {
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
                 ResultSet rs = stmt
-                        .executeQuery("Select * from Market_" + id + " where  Instrument like '" + Instrument + "'");
+                        .executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
@@ -92,7 +109,7 @@ public abstract class MarketDB {
         return false;
     }
 
-    public static boolean checkPriceLimit(String Instrument, int limit, int id) {
+    public static boolean checkPriceLimit(String Instrument, int limit, int marketID) {
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
@@ -102,7 +119,7 @@ public abstract class MarketDB {
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
                 ResultSet rs = stmt
-                        .executeQuery("Select * from Market_" + id + " where  Instrument like '" + Instrument + "'");
+                        .executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
                 while (rs.next()) {
                     count++;
                     try {
@@ -138,36 +155,17 @@ public abstract class MarketDB {
         return false;
     }
 
-    public static void executeTransaction(String instrument, int quantity, int brokerID, boolean isBuy, int marketID,
-            int price) {
-
-        // Update market table
-        //
-
-        // Update broker table
-        // Insert or update broker in table
-        if (checkBrokerTransaction(brokerID, getInstrumentID(instrument))) {
-            updateBrokerInstrumentTransaction(getInstrumentID(instrument), brokerID, quantity, marketID, isBuy, price);
-        } else {
-            createBrokerInstrumentTransaction(getInstrumentID(instrument), brokerID, quantity, marketID, isBuy, price);
-        }
-        updateMarket(getInstrumentID(instrument), quantity, isBuy, marketID);
-        // Update market table
-    }
 
     public static void createBrokerInstrumentTransaction(int instrumentID, int brokerID, int quantity, int marketID,
             boolean isBuy, int price) {
         // Insert into this table
         Connection connection = null;
         try {
-            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Swingy.db");
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     Statement stmt = conn.createStatement()) {
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
-                quantity = (isBuy) ? getNewQuantity(instrumentID, brokerID, marketID) + quantity
-                        : getNewQuantity(instrumentID, brokerID, marketID) - quantity;
-
-                String newHero = "INSERT INTO Marketbroker" + marketID
+                String newHero = "INSERT INTO MarketBroker_" + marketID
                         + "(BrokerID, InstrumentID, Quantity, BuyPrice) VALUES(?,?,?,?)";
                 PreparedStatement pstmtVillains = conn.prepareStatement(newHero);
 
@@ -202,7 +200,7 @@ public abstract class MarketDB {
             String sql = "UPDATE MarketBroker_" + marketID
                     + " SET Quantity = ?, BuyPrice = ? WHERE BrokerID = ? AND InstrumentID = ?";
 
-            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Swingy.db");
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
                 pstmt.setInt(1, quantity);
@@ -222,6 +220,47 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
+    }
+
+    public static int getInstrumentPrice(String instrument, int marketID) {
+        Connection connection = null;
+        try {
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
+                    Statement stmt = conn.createStatement()) {
+                int count = 0;
+                int ret = 0;
+                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+
+                ResultSet rs = stmt.executeQuery("Select * from Market_" + marketID + " where Instrument like '"
+                        + instrument + "'");
+                while (rs.next()) {
+                    count++;
+                    try {
+                        ret = rs.getInt("Price");
+                    } catch (Exception e) {
+                        System.out.println("No such column found");
+                    }
+                }
+                if (count == 1) {
+                    return ret;
+                } else {
+                    System.out.println("Something went wrong 1");
+                    System.exit(-1);
+                }
+
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        } finally {
+            try {
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+        System.out.println("If this ever happens I will be very surpised...");
+        return -1;
     }
 
     public static int getNewQuantity(int instrumentID, int brokerID, int marketID) {
@@ -246,7 +285,7 @@ public abstract class MarketDB {
                 if (count == 1) {
                     return ret;
                 } else {
-                    System.out.println("Something went wrong");
+                    System.out.println("Something went wrong 2");
                     System.exit(-1);
                 }
 
@@ -274,7 +313,7 @@ public abstract class MarketDB {
 
             String sql = "UPDATE Market_" + marketID + " SET Quantity = ? WHERE id = ?";
 
-            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Swingy.db");
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
                 pstmt.setInt(1, quantity);
@@ -295,9 +334,41 @@ public abstract class MarketDB {
         }
 
     }
-    // TODO
-    public static boolean checkBrokerTransaction(int brokerID, int instrumentID) {
-        return true;
+
+    public static boolean checkBrokerTransaction(int brokerID, int instrumentID, int marketID) {
+        Connection connection = null;
+        try {
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
+                    Statement stmt = conn.createStatement()) {
+                int count = 0;
+                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+
+                ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where BrokerID = " + brokerID + " AND InstrumentID = " + instrumentID);
+                while (rs.next()) {
+                    count++;
+                }
+                if (count == 1) {
+                    return true;
+                } else if (count == 0){
+                    return false; 
+                } else {
+                    System.out.println("Something went wrong 3");
+                    System.exit(-1);
+                }
+
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        } finally {
+            try {
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+        System.out.println("If this ever happens I will be very surpised...");
+        return false;
     }
 
     public static int getNewMarketQuantity(int instrumentID, int marketID) {
@@ -314,6 +385,46 @@ public abstract class MarketDB {
                     count++;
                     try {
                         ret = rs.getInt("Quantity");
+                    } catch (Exception e) {
+                        System.out.println("No such column found");
+                    }
+                }
+                if (count == 1) {
+                    return ret;
+                } else {
+                    System.out.println("Something went wrong 4");
+                    System.exit(-1);
+                }
+
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        } finally {
+            try {
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+        System.out.println("If this ever happens I will be very surpised...");
+        return -1;
+    }
+
+    public static int getInstrumentID(String instrument, int marketID) {
+        Connection connection = null;
+        try {
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
+                    Statement stmt = conn.createStatement()) {
+                int count = 0;
+                int ret = 0;
+                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+
+                ResultSet rs = stmt.executeQuery("Select * from Market_" + marketID + " where Instrument like '" + instrument + "'");
+                while (rs.next()) {
+                    count++;
+                    try {
+                        ret = rs.getInt("id");
                     } catch (Exception e) {
                         System.out.println("No such column found");
                     }
@@ -339,9 +450,5 @@ public abstract class MarketDB {
         System.out.println("If this ever happens I will be very surpised...");
         return -1;
     }
-
-    // TODO
-    public static int getInstrumentID(String instrument) {
-        return 1;
-    }
 }
+ 
