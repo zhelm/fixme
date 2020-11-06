@@ -15,21 +15,23 @@ public class ServerThread extends Thread {
             // recieve text from client
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-
-            String message;
+            boolean sentID = false;
+            String message = "";
 
             do {
-                // S
-                MessageHandler.sendMessage(Integer.toString(ServerSocketThread.id));
-                // R
-                message = reader.readLine();
-                // S
-                MessageHandler.sendMessage(message);
-                // R
-                message = reader.readLine();
-                // S
-                MessageHandler.sendMessage(message);
-            } while(!message.equals("-1"));
+                
+                if(!sentID) {
+                    MessageHandler.sendMessage(Integer.toString(ServerSocketThread.id));
+                    sentID = true;
+                }
+                
+                if((message = reader.readLine()) != null) {
+                    System.out.println("Message from router " + message);
+                    MessageHandler.sendMessage(message);
+                }
+                
+                // I really feel that this way is wrong and that there is a better way to do it
+            } while(message == null || !message.equals("-1"));
             socket.close();
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());

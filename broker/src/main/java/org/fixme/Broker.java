@@ -1,13 +1,9 @@
 package org.fixme;
 
 import java.io.BufferedReader;
-import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -17,39 +13,37 @@ public class Broker {
         try (Socket socket = new Socket("localhost", 5000)) {
             int wallet = 20000;
             int id = 0;
-            // OutputStream output = socket.getOutputStream();
-            // PrintWriter writer = new PrintWriter(output, true);
-            // buy/sell = 54
-            // brokerid - 50 and 49
 
-            String Instrument = "GOLD"; // 55
+            String Instrument = "Wood"; // 55
             String Quantity = "20"; // 38
-            String Market = "1"; // 56
-            String Price = "20"; // 44
-            boolean isBuy = true;
-
-            // "id="+attach.clientId+soh+fixv+soh+"35=D"+soh+"54=1"+soh+"38=2"+soh+"44=90"+soh+"55=WTCSHIRTS"+soh;
-            // msg += "50="+attach.clientId+soh+"49="+attach.clientId+soh+"56="+dst+soh;
-            // • Instrument
-            // • Quantity
-            // • Market
-            // • Price
+            String Market = "2"; // 56
+            String Price = "1"; // 44
+            boolean isBuy = (args[0].equals("1") ? true : false);
 
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String text;
             String message;
             do {
-                // R
-                // S
-                // R
-                // XXXXXX
                 text = reader.readLine();
-                id = Integer.parseInt(text);
-                // Need to see if this broker has enough money first
-                message = getFixMessage(id, Instrument, Quantity, Market, Price, wallet, isBuy);
-                System.out.println(message);
-                MessageHandler.sendMessage(socket, message);
+                System.out.println("Message= " + text);
+                if(id == 0) {
+                    id = Integer.parseInt(text);
+                    message = getFixMessage(id, Instrument, Quantity, Market, Price, wallet, isBuy);
+                    MessageHandler.sendMessage(socket, message);
+                }
+                String[] marketMessage = text.split(String.valueOf((char)1));
+                System.out.println(marketMessage.length);
+                if(marketMessage.length > 2) {
+                    if(marketMessage[2].split("=")[1].equals("8")) {
+                        System.out.println("Report recieved from Market with id " + marketMessage[0].split("=")[1]);
+                        System.out.println("Fix message: " + text.replaceAll(String.valueOf((char)1),"|"));
+                        System.out.println("The checksum has " + ((checkCheckSum()) ? "suceeded": "failed"));
+                        System.out.println("Transaction " + ((marketMessage[3].split("=")[1].equals("2"))? "Succeeded.":"Failed."));
+                        break;
+                    }
+                }
+
             } while (!text.equals("-1"));
 
             socket.close();
@@ -63,17 +57,6 @@ public class Broker {
             System.out.println("I/O error: " + ex.getMessage());
         }
 
-        // • Instrument
-        // • Quantity
-        // • Market
-        // • Price
-        // The Broker will send two types of messages:
-        // • Buy. - An order where the broker wants to buy an instrument
-        // • Sell. - An order where the broker want to sell an instrument
-        // and will receive from the market messages of the following types:
-        // • Executed - when the order was accepted by the market and the action
-        // succeeded
-        // • Rejected - when the order could not be met
     }
 
     public static String getFixMessage(int id, String Instrument, String Quantity, String Market, String Price,
@@ -84,19 +67,6 @@ public class Broker {
         int checksum = getCheckSum(message);
 
         return (checksum >= 100) ? (message + "10=" + checksum + (char) 1) : (message + "10=0" + checksum + (char) 1);
-        // String Quantity = "20"; // 38
-        // String Price = "50"; // 44
-        // brokerid - 50 and 49
-        // buy/sell = 54
-        // String Instrument = "SOL"; // 55
-        // String Market = "2"; // 56
-        // boolean isBuy = true;
-
-
-        // • Instrument
-        // • Quantity
-        // • Market
-        // • Price
     }
 
     public static int getCheckSum(String message) {
@@ -106,4 +76,9 @@ public class Broker {
         }
         return checkSum % 256;
     }
+
+    public static boolean checkCheckSum() {
+        return true;
+    }
+
 }

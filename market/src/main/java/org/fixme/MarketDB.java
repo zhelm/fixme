@@ -4,22 +4,22 @@ import java.sql.*;
 
 public abstract class MarketDB {
 
-    public static void executeTransaction(String instrument, int quantity, int brokerID, boolean isBuy, int marketID,
+    public static boolean executeTransaction(String instrument, int quantity, int brokerID, boolean isBuy, int marketID,
             int price) {
 
-        // Update market table
-        //
-
-        // Update broker table
-        // Insert or update broker in table
-        if (checkBrokerTransaction(brokerID, getInstrumentID(instrument, marketID), marketID)) {
-            updateBrokerInstrumentTransaction(getInstrumentID(instrument, marketID), brokerID, quantity, marketID, isBuy, price);
-        } else {
-            createBrokerInstrumentTransaction(getInstrumentID(instrument, marketID), brokerID, quantity, marketID, isBuy, price);
+        try {
+            if (checkBrokerTransaction(brokerID, getInstrumentID(instrument, marketID), marketID, isBuy, quantity)) {
+                updateBrokerInstrumentTransaction(getInstrumentID(instrument, marketID), brokerID, quantity, marketID, isBuy, price);
+            } else {
+                createBrokerInstrumentTransaction(getInstrumentID(instrument, marketID), brokerID, quantity, marketID, isBuy, price);
+            }
+    
+            updateMarket(getInstrumentID(instrument, marketID), quantity, isBuy, marketID, brokerID);
+            return true;
+        } catch (Exception e) {
+            System.out.println("Something went wrong with execution");
+            return false;
         }
-
-        updateMarket(getInstrumentID(instrument, marketID), quantity, isBuy, marketID, brokerID);
-        // Update market table first
     }
 
     public static boolean isInstrument(String Instrument, int marketID) {
@@ -43,7 +43,7 @@ public abstract class MarketDB {
                 if (count == 1) {
                     return true;
                 } else if (count == 0) {
-                    System.out.println("No Instrument found for: " + Instrument);
+                    System.out.println("No Instrument found for 1: " + Instrument);
                     return false;
                 } else {
                     System.out.println("Something very bad went wrong!!");
@@ -60,26 +60,35 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 1");
         return false;
     }
 
-    public static boolean checkInstrumentQuantity(String Instrument, int quantity, int marketID) {
+    public static boolean checkInstrumentQuantity(String Instrument, int quantity, int marketID, int brokerID, boolean isBuy) {
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     Statement stmt = conn.createStatement()) {
                 int Available_Quantity = 0;
                 int count = 0;
-                //TODO Need to know if its buy or sell
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                boolean isBroker = false;
 
-                ResultSet rs = stmt.executeQuery(
-                        "Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
+                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                ResultSet rs;
+                if (isBuy) {
+                    rs = stmt.executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
+                } else {
+                    isBroker = true;
+                    rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where  BrokerID = " + brokerID);
+                }
                 while (rs.next()) {
                     count++;
                     try {
-                        Available_Quantity = rs.getInt("Available_Quantity");
+                        if (isBuy) {
+                            Available_Quantity = rs.getInt("Available_Quantity");
+                        } else {
+                            Available_Quantity = rs.getInt("Quantity");
+                        }
                     } catch (Exception e) {
                         System.out.println("No such column found 2");
                     }
@@ -87,14 +96,16 @@ public abstract class MarketDB {
                 if (count == 1 && quantity <= Available_Quantity) {
                     return true;
                 } else if (count == 1 && quantity >= Available_Quantity) {
-                    System.out.println("Out of stock!!");
+                    System.out.println("Out of stock or not enough stock!!");
                     return false;
-                } else if (count == 0) {
-                    System.out.println("No Instrument found for: " + Instrument);
+                } else if (count == 0 && isBroker) {
+                    System.out.println("No previous instrument data found for broker.");
+                    return false;
+                } else if (count == 0){
+                    System.out.println("No Instrument found for 2: " + Instrument);
                     return false;
                 } else {
                     System.out.println("Something very bad went wrong!!");
-                    return false;
                 }
             } catch (SQLException e) {
                 System.out.println(e.getMessage());
@@ -107,17 +118,16 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 2");
         return false;
     }
 
-    public static boolean checkPriceLimit(String Instrument, int limit, int marketID) {
+    public static boolean checkPriceLimit(String Instrument, int limit, int marketID, boolean isBuy) {
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     Statement stmt = conn.createStatement()) {
 
-                //TODO Need to know if its buy or sell
 
                 int price = 0;
                 int count = 0;
@@ -133,14 +143,14 @@ public abstract class MarketDB {
                         System.out.println("No such column found 3");
                     }
                 }
-                // TODO I think this is wrong
-                if (count == 1 && limit <= price) {
+
+                if ((count == 1 && limit >= price && isBuy) || (count == 1 && limit <= price && !isBuy)) {
                     return true;
-                } else if (count == 1 && limit >= price) {
+                } else if ((count == 1 && limit <= price && isBuy) || (count == 1 && limit >= price && !isBuy)) {
                     System.out.println("Price of instrument exceeds the limit. Please try again later(never).");
                     return false;
                 } else if (count == 0) {
-                    System.out.println("No Instrument found for: " + Instrument);
+                    System.out.println("No Instrument found for 3: " + Instrument);
                     return false;
                 } else {
                     System.out.println("Something very bad went wrong!!");
@@ -157,7 +167,7 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 3");
         return false;
     }
 
@@ -264,7 +274,7 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 4");
         return -1;
     }
 
@@ -278,7 +288,7 @@ public abstract class MarketDB {
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
                 ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where InstrumentID = "
-                        + instrumentID + " AND BrokerID = " + marketID);
+                        + instrumentID + " AND BrokerID = " + brokerID);
                 while (rs.next()) {
                     count++;
                     try {
@@ -305,7 +315,7 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 5");
         return -1;
     }
 
@@ -345,20 +355,25 @@ public abstract class MarketDB {
         return false;
     }
 
-    public static boolean checkBrokerTransaction(int brokerID, int instrumentID, int marketID) {
+    public static boolean checkBrokerTransaction(int brokerID, int instrumentID, int marketID, boolean isBuy, int quantity) {
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     Statement stmt = conn.createStatement()) {
                 int count = 0;
+                int brokerQuantity = 0;
                 stmt.setQueryTimeout(30); // set timeout to 30 sec.
 
                 ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where BrokerID = "
                         + brokerID + " AND InstrumentID = " + instrumentID);
                 while (rs.next()) {
                     count++;
+                    brokerQuantity = rs.getInt("Quantity");
                 }
                 if (count == 1) {
+                    if(!isBuy && brokerQuantity < quantity) {
+                        return false;
+                    }
                     return true;
                 } else if (count == 0) {
                     return false;
@@ -378,7 +393,7 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 6");
         return false;
     }
 
@@ -418,7 +433,7 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 7");
         return -1;
     }
 
@@ -459,7 +474,7 @@ public abstract class MarketDB {
                 System.err.println(e.getMessage());
             }
         }
-        System.out.println("If this ever happens I will be very surpised...");
+        System.out.println("If this ever happens I will be very surpised... 8");
         return -1;
     }
 }
