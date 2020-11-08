@@ -6,19 +6,17 @@ import java.net.Socket;
 
 public class ServerSocketThread extends Thread {
     private int port;
-    public static int id;
+    public static int id = 1000000;
 
     public ServerSocketThread(int port) {
         this.port = port;
     }
 
     public void run() {
-            // recieve text from client
         try (ServerSocket serverSocket = new ServerSocket(port)) {
 
             System.out.println("Server is listening on port " + port);
 
-            // enables multiple connections using threads
             while (true) {
                 Socket socket = serverSocket.accept();
                 id++;
@@ -29,7 +27,6 @@ public class ServerSocketThread extends Thread {
                 } else if (socket.getLocalPort() == 5001) {
                     System.out.println("New Market connectedwith id: " + id);
                 }
-                // need to add this socket to a list
                 new ServerThread(socket).start();
             }
         } catch (IOException ex) {

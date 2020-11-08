@@ -48,7 +48,6 @@ public abstract class MessageHandler {
                     }
                 }
             }
-            System.out.println("I am out of the loop");
             if(!sentMessage) {
                 returnErrorMessage(message);
             }
@@ -83,11 +82,9 @@ public abstract class MessageHandler {
     }
 
     public static boolean checkCheckSum(String message) {
-        if(message.length() < 4) {
+        if(message.length() < 8) {
             return true;
         }
-        // id=2☺8=FIX.4.2☺35=8☺39=2☺50=2☺49=2☺56=3☺
-        // 10=169☺
         String messageChecksum = message.substring(message.length() - 7, message.length());
         String fixMessage = message.substring(0, message.length() - 7);
         int initialChecksum = getCheckSum(fixMessage);
@@ -96,7 +93,6 @@ public abstract class MessageHandler {
         messageChecksum = messageChecksum.substring(0, messageChecksum.length() - 1);
 
         int validateChecksum = Integer.parseInt(messageChecksum);
-        System.out.println("Validate Checksum = " + validateChecksum);
 
         if(initialChecksum == validateChecksum) {
             System.out.println("Checksum has matched");

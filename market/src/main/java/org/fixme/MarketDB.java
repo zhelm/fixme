@@ -28,7 +28,7 @@ public abstract class MarketDB {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     Statement stmt = conn.createStatement()) {
                 int count = 0;
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 ResultSet rs = stmt.executeQuery(
                         "Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
@@ -73,7 +73,7 @@ public abstract class MarketDB {
                 int count = 0;
                 boolean isBroker = false;
 
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
                 ResultSet rs;
                 if (isBuy) {
                     rs = stmt.executeQuery("Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
@@ -131,7 +131,7 @@ public abstract class MarketDB {
 
                 int price = 0;
                 int count = 0;
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 ResultSet rs = stmt.executeQuery(
                         "Select * from Market_" + marketID + " where  Instrument like '" + Instrument + "'");
@@ -173,12 +173,11 @@ public abstract class MarketDB {
 
     public static void createBrokerInstrumentTransaction(int instrumentID, int brokerID, int quantity, int marketID,
             boolean isBuy, int price) {
-        // Insert into this table
         Connection connection = null;
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");
                     Statement stmt = conn.createStatement()) {
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 String newHero = "INSERT INTO MarketBroker_" + marketID
                         + "(BrokerID, InstrumentID, Quantity, BuyPrice) VALUES(?,?,?,?)";
@@ -244,7 +243,7 @@ public abstract class MarketDB {
                     Statement stmt = conn.createStatement()) {
                 int count = 0;
                 int ret = 0;
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 ResultSet rs = stmt.executeQuery(
                         "Select * from Market_" + marketID + " where Instrument like '" + instrument + "'");
@@ -285,7 +284,7 @@ public abstract class MarketDB {
                     Statement stmt = conn.createStatement()) {
                 int count = 0;
                 int ret = 0;
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where InstrumentID = "
                         + instrumentID + " AND BrokerID = " + brokerID);
@@ -322,7 +321,6 @@ public abstract class MarketDB {
     public static boolean updateMarket(int instrumentID, int quantity, Boolean isBuy, int marketID, int brokerID) {
         Connection connection = null;
         try {
-            // if its a sell I need to check if broker has enough to sell
             quantity = (isBuy) ? getNewMarketQuantity(instrumentID, marketID) - quantity
                     : getNewMarketQuantity(instrumentID, marketID) + quantity;
 
@@ -362,7 +360,7 @@ public abstract class MarketDB {
                     Statement stmt = conn.createStatement()) {
                 int count = 0;
                 int brokerQuantity = 0;
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 ResultSet rs = stmt.executeQuery("Select * from MarketBroker_" + marketID + " where BrokerID = "
                         + brokerID + " AND InstrumentID = " + instrumentID);
@@ -404,7 +402,7 @@ public abstract class MarketDB {
                     Statement stmt = conn.createStatement()) {
                 int count = 0;
                 int ret = 0;
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 ResultSet rs = stmt.executeQuery("Select * from Market_" + marketID + " where id = " + instrumentID);
                 while (rs.next()) {
@@ -444,7 +442,7 @@ public abstract class MarketDB {
                     Statement stmt = conn.createStatement()) {
                 int count = 0;
                 int ret = 0;
-                stmt.setQueryTimeout(30); // set timeout to 30 sec.
+                stmt.setQueryTimeout(30);
 
                 ResultSet rs = stmt.executeQuery(
                         "Select * from Market_" + marketID + " where Instrument like '" + instrument + "'");

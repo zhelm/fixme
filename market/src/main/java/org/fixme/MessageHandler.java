@@ -59,9 +59,7 @@ public abstract class MessageHandler {
     }
 
     public static boolean checkCheckSum(String message) {
-        // id=2☺8=FIX.4.2☺35=8☺39=2☺50=2☺49=2☺56=3☺
-        // 10=169☺
-        if(message.length() < 4) {
+        if(message.length() < 8) {
             return true;
         }
         String messageChecksum = message.substring(message.length() - 7, message.length());
@@ -72,7 +70,6 @@ public abstract class MessageHandler {
         messageChecksum = messageChecksum.substring(0, messageChecksum.length() - 1);
 
         int validateChecksum = Integer.parseInt(messageChecksum);
-        System.out.println("Validate Checksum = " + validateChecksum);
 
         if(initialChecksum == validateChecksum) {
             System.out.println("Checksum has matched");

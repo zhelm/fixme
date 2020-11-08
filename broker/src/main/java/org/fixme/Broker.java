@@ -90,8 +90,6 @@ public class Broker {
     }
 
     public static boolean checkCheckSum(String message) {
-        // id=2☺8=FIX.4.2☺35=8☺39=2☺50=2☺49=2☺56=3☺
-        // 10=169☺
         String messageChecksum = message.substring(message.length() - 7, message.length());
         String fixMessage = message.substring(0, message.length() - 7);
         int initialChecksum = getCheckSum(fixMessage);

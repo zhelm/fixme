@@ -12,8 +12,6 @@ public abstract class MessageHandler {
     public static void sendMessage(Socket socket, String message) throws IOException {
             OutputStream output = socket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
-            // create message
             writer.println(message);
-            // modulo 256 the ascii value of the string
     }
 }

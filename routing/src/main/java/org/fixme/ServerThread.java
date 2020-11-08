@@ -12,7 +12,6 @@ public class ServerThread extends Thread {
 
     public void run() {
         try {
-            // recieve text from client
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             boolean sentID = false;
@@ -30,7 +29,6 @@ public class ServerThread extends Thread {
                     MessageHandler.sendMessage(message);
                 }
                 
-                // I really feel that this way is wrong and that there is a better way to do it
             } while(message == null || !message.equals("-1"));
             socket.close();
         } catch (IOException ex) {
