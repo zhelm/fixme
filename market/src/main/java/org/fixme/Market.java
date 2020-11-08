@@ -22,6 +22,7 @@ public class Market {
             String text;
             do {
                 text = reader.readLine();
+                System.out.println("Message= " + text);
                 if (id == 0) {
                     id = Integer.parseInt(text);
                     try (Connection conn = DriverManager.getConnection("jdbc:sqlite:Fixme.db");

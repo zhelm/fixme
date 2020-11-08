@@ -21,11 +21,12 @@ public class ServerThread extends Thread {
                 
                 if(!sentID) {
                     MessageHandler.sendMessage(Integer.toString(ServerSocketThread.id));
+                    System.out.println("Assigning id of " + ServerSocketThread.id + " to client.");
                     sentID = true;
                 }
                 
                 if((message = reader.readLine()) != null) {
-                    System.out.println("Message from router " + message);
+                    System.out.println("Message= " + message);
                     MessageHandler.sendMessage(message);
                 }
                 

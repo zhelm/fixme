@@ -38,7 +38,7 @@ public class Broker {
             String message;
             do {
                 text = reader.readLine();
-                System.out.println("Message= " + text);
+                System.out.println("Message = " + text);
                 if(id == 0) {
                     id = Integer.parseInt(text);
                     message = getFixMessage(id, Instrument, Quantity, Market, Price, wallet, isBuy);
