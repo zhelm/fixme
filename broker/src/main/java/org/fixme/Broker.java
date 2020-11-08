@@ -7,18 +7,30 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-// https://www.codejava.net/java-se/networking/java-socket-server-examples-tcp-ip
 public class Broker {
     public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 5000)) {
+            if(args.length != 5) {
+                System.out.println("Not enough arguments.");
+                return;
+            }
             int wallet = 20000;
             int id = 0;
 
-            String Instrument = "Wood"; // 55
-            String Quantity = "20"; // 38
-            String Market = "2"; // 56
-            String Price = "1"; // 44
-            boolean isBuy = (args[0].equals("1") ? true : false);
+            String Instrument = args[0];
+            String Quantity = args[1]; 
+            String Market = args[2]; 
+            String Price = args[3];
+            boolean isBuy = (args[4].equals("1") ? true : false);
+            try {
+                Integer.parseInt(args[1]);
+                Integer.parseInt(args[2]);
+                Integer.parseInt(args[3]);
+                Integer.parseInt(args[4]);
+            } catch (Exception e) {
+                System.out.println("One of the values that need to be numeric, is not please try again.");
+            } 
+
 
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
@@ -38,7 +50,7 @@ public class Broker {
                     if(marketMessage[2].split("=")[1].equals("8")) {
                         System.out.println("Report recieved from Market with id " + marketMessage[0].split("=")[1]);
                         System.out.println("Fix message: " + text.replaceAll(String.valueOf((char)1),"|"));
-                        System.out.println("The checksum has " + ((checkCheckSum()) ? "suceeded": "failed"));
+                        System.out.println("The checksum has " + ((checkCheckSum(text)) ? "suceeded": "failed"));
                         System.out.println("Transaction " + ((marketMessage[3].split("=")[1].equals("2"))? "Succeeded.":"Failed."));
                         break;
                     }
@@ -77,8 +89,24 @@ public class Broker {
         return checkSum % 256;
     }
 
-    public static boolean checkCheckSum() {
-        return true;
-    }
+    public static boolean checkCheckSum(String message) {
+        // id=2☺8=FIX.4.2☺35=8☺39=2☺50=2☺49=2☺56=3☺
+        // 10=169☺
+        String messageChecksum = message.substring(message.length() - 7, message.length());
+        String fixMessage = message.substring(0, message.length() - 7);
+        int initialChecksum = getCheckSum(fixMessage);
 
+        messageChecksum = messageChecksum.split("=")[1];
+        messageChecksum = messageChecksum.substring(0, messageChecksum.length() - 1);
+
+        int validateChecksum = Integer.parseInt(messageChecksum);
+        System.out.println("Validate Checksum = " + validateChecksum);
+
+        if(initialChecksum == validateChecksum) {
+            System.out.println("Checksum has matched");
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
